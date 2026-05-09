@@ -1,0 +1,15 @@
+{
+    "name": "celes/web",
+    "autoload": {
+        "psr-4": {
+            "Celes\\Web\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Celestinof",
+            "email": "celestinofernandoit@gmail.com"
+        }
+    ],
+    "require": {}
+}

@@ -1,0 +1,11 @@
+# Ignorar la carpeta de dependencias de Composer
+/vendor/
+/Web/vendor/
+
+# Ignorar archivos de configuración del sistema o entorno
+.env
+.DS_Store
+Thumbs.db
+
+# Ignorar archivos temporales de VS Code
+.vscode/
