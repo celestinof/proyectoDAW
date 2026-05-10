@@ -2,7 +2,7 @@
     "name": "celes/web",
     "autoload": {
         "psr-4": {
-            "Celes\\Web\\": "src/"
+            "App\\": "src/"
         }
     },
     "authors": [

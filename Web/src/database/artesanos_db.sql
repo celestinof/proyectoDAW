@@ -56,6 +56,45 @@ CREATE TABLE detalles_pedido (
     precio_unitario_captura DECIMAL(10,2) NOT NULL, -- Guardamos el precio del momento
     iva_aplicado_captura DECIMAL(5,2) NOT NULL,    -- Guardamos el IVA del momento
     FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE, -- Si borro un pedido, borra todos los detalles de pedido
-    FOREIGN KEY (produc to_id) REFERENCES productos(id) ON DELETE SET NULL -- Si borro un producto del catálogo, no se borra del pedido. 
+    FOREIGN KEY (producto_id) REFERENCES productos(id) ON DELETE SET NULL -- Si borro un producto del catálogo, no se borra del pedido. 
                                                                           -- Simplemente pasa a estar NULL en detalles pedido, pero sigue existiendo en pedido.
 );
+
+
+-- Insertando algunos datos (los pedí a una IA generativa por que Fazinotto me daba problemas, y la verdad intenté no perder tiempo escribiéndolos)
+-- 1. Insertando en categorias
+INSERT INTO categorias (nombre, descripcion) VALUES
+('Llaveros', 'Llaveros artesanales personalizados en madera y metal'),
+('Grabados', 'Cuadros y placas con grabado láser de alta precisión'),
+('Joyería', 'Colgantes, pulseras y anillos hechos a mano');
+
+-- 2. Insertando en productos (Ajustado a: precio_base)
+INSERT INTO productos (categoria_id, nombre, descripcion, precio_base, stock) VALUES
+(1, 'Llavero Personalizado Madera', 'Llavero de roble con nombre grabado a doble cara', 12.50, 50),
+(1, 'Llavero Acero Inoxidable', 'Llavero resistente con forma de corazón y fecha grabada', 15.00, 30),
+(1, 'Llavero de Cuero', 'Llavero de cuero trenzado con iniciales', 9.90, 45),
+(2, 'Retrato Grabado Láser', 'Retrato familiar grabado en madera de pino 20x20cm', 45.00, 10),
+(2, 'Placa para Mascotas', 'Placa identificativa con el nombre y teléfono para collar', 9.99, 100),
+(2, 'Cartel Boda Personalizado', 'Cartel de bienvenida para bodas en metacrilato', 65.00, 5),
+(3, 'Colgante Árbol de la Vida', 'Colgante artesanal de plata y cuarzo', 25.00, 15),
+(3, 'Pulsera Piedras Naturales', 'Pulsera elástica con piedras volcánicas', 18.50, 20);
+
+-- 3. Insertando en usuarios
+INSERT INTO usuarios (nombre, email, password, rol) VALUES
+('Admin Tienda', 'admin@artesanos.com', '123456', 'admin'),
+('Carlos García', 'carlos.garcia@gmail.com', '123456', 'cliente'),
+('Laura Martínez', 'laura.martinez@hotmail.com', '123456', 'cliente'),
+('Miguel Ángel', 'miguel.angel@yahoo.com', '123456', 'cliente');
+
+-- 4. Insertando en pedidos (Ajustado a: fecha_pedido, totales desglosados)
+INSERT INTO pedidos (usuario_id, fecha_pedido, total_base_imponible, total_iva, total_final, estado) VALUES
+(2, '2023-10-01 10:30:00', 22.73, 4.77, 27.50, 'pagado'),
+(3, '2023-10-05 16:45:00', 37.19, 7.81, 45.00, 'enviado'),
+(4, '2023-10-10 09:15:00', 53.72, 11.28, 65.00, 'pendiente');
+
+-- 5. Insertando en detalles_pedido (Añadido para completar la estructura)
+INSERT INTO detalles_pedido (pedido_id, producto_id, cantidad, precio_unitario_captura, iva_aplicado_captura) VALUES
+(1, 1, 1, 12.50, 21.00),
+(1, 2, 1, 15.00, 21.00),
+(2, 4, 1, 45.00, 21.00),
+(3, 6, 1, 65.00, 21.00);
