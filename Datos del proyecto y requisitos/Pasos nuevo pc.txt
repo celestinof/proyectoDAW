@@ -1,0 +1,2 @@
+- Cargar autoload. Dentro de web, composer install
+- Volver a crear la BBDD en el nuevo pc

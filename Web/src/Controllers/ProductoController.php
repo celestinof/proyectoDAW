@@ -12,8 +12,9 @@ class ProductoController {
         // 2. Llamar al método listarTodo() y guardar el resultado en una variable llamada $productos
         $productos=$producto->listarTodo();
 
-        // 3. print_r de $productos para ver que llegan los datos como prueba
-        print_r($productos);
+        
+        // 3. Cargar la vista. Al cargarla aquí, automáticamente tiene acceso a $productos
+        require_once '../src/views/productos/index.php';
     }
 
 }
