@@ -36,6 +36,49 @@ private $arrayProductos;
 
         }
 
+            /**
+         * Inserta un nuevo producto en la base de datos viniendo de "/views/productos/crear.php").
+         * @param array $datos Array asociativo con los datos del formulario
+         * @return boolean True si tuvo éxito, False si falló
+         */
+        public function crear($datos) {
+        try {
+            // 1. Preparamos la consulta SQL para vinvular con bindparam. Esto evita inyecciones SQL porque separa el código de los datos.
+            // Nota: Asumimos un iva_porcentaje por defecto del 21.00 si no viene del formulario
+            $sql = "INSERT INTO productos (categoria_id, nombre, descripcion, precio_base, iva_porcentaje, stock) 
+                    VALUES (:categoria_id, :nombre, :descripcion, :precio_base, 21.00, :stock)";
+            
+            // 2. Preparamos la sentencia usando la conexión que ya teníamos en el constructor
+            $stmt = $this->conexion->prepare($sql);
+            
+           // 3. VINCULACIÓN DE PARÁMETROS (Binding)
+            // Usamos bindParam() para asociar cada marcador de la consulta SQL con su variable real.
+
+            //categoría
+            $stmt->bindParam(':categoria_id', $datos['categoria_id']);
+            
+            //nombre
+            $stmt->bindParam(':nombre', $datos['nombre']);
+            
+            //descripción
+            $stmt->bindParam(':descripcion', $datos['descripcion']);
+            
+            //precio
+            $stmt->bindParam(':precio_base', $datos['precio_base']);
+            
+            // stock
+            $stmt->bindParam(':stock', $datos['stock']);
+
+            // 4. EJECUCIÓN DE LA CONSULTA
+            $resultado = $stmt->execute();
+            
+            return $resultado; // Devuelve true si funcionó
+
+        } catch (PDOException $e) {
+            // Si hay un error, lo mostramos
+            die("Error al insertar el producto: " . $e->getMessage());
+        }
+    }
 
 }
 

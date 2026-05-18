@@ -1,0 +1,20 @@
+/* ========================================================
+   HOJA DE ESTILOS PERSONALIZADA (Complementaria a Bootstrap)
+   ========================================================
+*/
+
+/* Bootstrap ya formatea los formularios muy bien y la verdad es que es muy cómodo ir sacando el diseño de la web
+*/
+
+/* Clase para ocultar/mostrar los mensajes de error debajo de los inputs */
+.error-js { 
+    color: #dc3545; /* Usamos el mismo rojo que usa Bootstrap para los errores (lo busqué en internet*/
+    display: none; /* Por defecto, oculto hasta que JS lo active */
+    margin-top: 5px; 
+}
+
+/* Clase que nuestro JavaScript añadirá al input si falla la validación */
+.input-invalido { 
+    border-color: #dc3545 !important; /* Forzamos el borde rojo */
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25); /* Efecto de resplandor rojo al hacer clic */
+}
