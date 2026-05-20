@@ -69,7 +69,7 @@ private $arrayProductos;
             // stock
             $stmt->bindParam(':stock', $datos['stock']);
 
-            // 4. EJECUCIÓN DE LA CONSULTA
+            // 4. EJECUCIÓN DE LA CONSULTA y almacenar el resultado
             $resultado = $stmt->execute();
             
             return $resultado; // Devuelve true si funcionó
@@ -78,6 +78,40 @@ private $arrayProductos;
             // Si hay un error, lo mostramos
             die("Error al insertar el producto: " . $e->getMessage());
         }
+    }
+
+    /**
+         * Intenta obtener un producto por su id y mostrar el producto "/views/productos/ver.php").
+         * @param string $id identificador del producto
+         * @return boolean True si tuvo éxito, False si falló
+         */
+    public function obtenerPorId($id){
+        try {
+        //Consulta para extraer los datos del producto por su id
+        $sql="SELECT * FROM productos WHERE id=:id";
+
+        //Preparamos la consulta
+        $stmt=$this->conexion->prepare($sql);
+
+        //vinculamos el id para la seguridad en la consulta
+        $stmt->bindParam(":id",$id);
+
+        // Ejecutamos la consulta en el motor de la base de datos
+        $stmt->execute();
+
+        // Retornamos el resultado. 
+        // IMPORTANTE: Usamos fetch() en lugar de fetchAll() porque solo esperamos 
+        // un único registro (el ID es clave primaria y es único).
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        
+        } catch (PDOException $e) {
+            // Si hay un error, lo mostramos
+            die("Error al insertar el producto: " . $e->getMessage());
+        }
+
+
+
     }
 
 }
