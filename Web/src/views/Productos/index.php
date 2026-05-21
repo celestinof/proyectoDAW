@@ -7,7 +7,7 @@
 <body>
 
     <h1>Catálogo de Productos</h1>
-
+<!--Nos traemos la lista de productos al index del controlador-->
     <?php if (!empty($productos)): ?>
         <?php foreach ($productos as $producto): ?>
             <div class="producto">

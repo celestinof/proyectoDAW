@@ -23,7 +23,11 @@
                     
                     <div class="card-body">
                         <!-- formulario -->
-                        <form id="formCrearProducto" action="index.php?controller=Producto&action=guardar" method="POST">
+                        <!-- Fijarse en el action. Tuve que volver a cambiarlo
+                         Inicialmente ==>"index.php?controller=Producto&action=guardar"
+                         Ahora ==> "index.php?action=guardar" 
+                        -->
+                        <form id="formCrearProducto" action="index.php?action=guardar" method="POST">
                             
                             <div class="mb-3">
                                 <label for="nombre" class="form-label fw-bold">Nombre del producto:</label>
@@ -61,7 +65,10 @@
                             </div>
 
                             <div class="d-flex justify-content-between mt-4">
-                                <!-- El botón cancelar -->
+                                <!-- El botón cancelar
+                                 También cambiamos de 
+                                 href="index.php?controller=Producto&action=index"
+                                 a href="index.php" -->
                                 <a href="index.php?controller=Producto&action=index" class="btn btn-secondary">Cancelar</a>
                                 <!-- Submit -->
                                 <button type="submit" id="btnGuardar" class="btn btn-success">Guardar Producto</button>

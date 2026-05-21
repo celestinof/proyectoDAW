@@ -2,6 +2,7 @@
 namespace App\Models;
 use App\Config\Conexion; //Llamamos para usar conexion
 use PDO; //Para usar la funcion global de PDO y que no la busque en mis clases
+use PDOException; // <--- Para los errores de PDO
 
 class Producto{
 
@@ -49,7 +50,7 @@ private $arrayProductos;
                     VALUES (:categoria_id, :nombre, :descripcion, :precio_base, 21.00, :stock)";
             
             // 2. Preparamos la sentencia usando la conexión que ya teníamos en el constructor
-            $stmt = $this->conexion->prepare($sql);
+            $stmt = $this->db->prepare($sql);
             
            // 3. VINCULACIÓN DE PARÁMETROS (Binding)
             // Usamos bindParam() para asociar cada marcador de la consulta SQL con su variable real.
@@ -91,7 +92,7 @@ private $arrayProductos;
         $sql="SELECT * FROM productos WHERE id=:id";
 
         //Preparamos la consulta
-        $stmt=$this->conexion->prepare($sql);
+        $stmt=$this->db->prepare($sql);
 
         //vinculamos el id para la seguridad en la consulta
         $stmt->bindParam(":id",$id);
