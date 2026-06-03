@@ -115,6 +115,50 @@ private $arrayProductos;
 
     }
 
+
+    /**
+     * Elimina un producto por su ID. DELETE EN EL CRUD
+     */
+    public function eliminar($id) {
+        try {
+            $sql = "DELETE FROM productos WHERE id = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':id', $id, \PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch (\PDOException $e) {
+            die("Error al eliminar el producto: " . $e->getMessage());
+        }
+    }
+
+
+        /**
+     * Actualiza un producto existente. update
+     */
+    public function actualizar($datos) {
+        try {
+            $sql = "UPDATE productos SET 
+                    categoria_id = :categoria_id, 
+                    nombre = :nombre, 
+                    descripcion = :descripcion, 
+                    precio_base = :precio_base, 
+                    stock = :stock 
+                    WHERE id = :id";
+            
+            $stmt = $this->db->prepare($sql);
+            
+            $stmt->bindParam(':categoria_id', $datos['categoria_id'], \PDO::PARAM_INT);
+            $stmt->bindParam(':nombre', $datos['nombre'], \PDO::PARAM_STR);
+            $stmt->bindParam(':descripcion', $datos['descripcion'], \PDO::PARAM_STR);
+            $stmt->bindParam(':precio_base', $datos['precio_base'], \PDO::PARAM_STR);
+            $stmt->bindParam(':stock', $datos['stock'], \PDO::PARAM_INT);
+            $stmt->bindParam(':id', $datos['id'], \PDO::PARAM_INT); // El ID es clave para saber cuál actualizar
+
+            return $stmt->execute();
+        } catch (\PDOException $e) {
+            die("Error al actualizar: " . $e->getMessage());
+        }
+    }
+
 }
 
 

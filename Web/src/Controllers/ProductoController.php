@@ -79,4 +79,50 @@ class ProductoController {
         //Una vez obtenemos los valores, llamamos a la página para pintar los datos
         require_once '../src/views/productos/ver.php';
     }
+
+      /**
+     * DELETE EN EL CRUD. Procesa la orden de borrar un producto
+     */
+    public function eliminar() {
+        // Capturamos el ID
+        $id = $_GET['id'] ?? null;
+        
+        if ($id) {
+            $productoModel = new Producto();
+            $productoModel->eliminar($id); // Borramos de la BBDD
+        }
+        
+        // Pase lo que pase, redirigimos al catálogo
+        header("Location: index.php");
+        exit();
+    }
+
+        /**
+     * Actualiza un producto existente UPDATE
+     */
+    public function actualizar($datos) {
+        try {
+            $sql = "UPDATE productos SET 
+                    categoria_id = :categoria_id, 
+                    nombre = :nombre, 
+                    descripcion = :descripcion, 
+                    precio_base = :precio_base, 
+                    stock = :stock 
+                    WHERE id = :id";
+            
+            $stmt = $this->db->prepare($sql);
+            
+            $stmt->bindParam(':categoria_id', $datos['categoria_id'], \PDO::PARAM_INT);
+            $stmt->bindParam(':nombre', $datos['nombre'], \PDO::PARAM_STR);
+            $stmt->bindParam(':descripcion', $datos['descripcion'], \PDO::PARAM_STR);
+            $stmt->bindParam(':precio_base', $datos['precio_base'], \PDO::PARAM_STR);
+            $stmt->bindParam(':stock', $datos['stock'], \PDO::PARAM_INT);
+            $stmt->bindParam(':id', $datos['id'], \PDO::PARAM_INT); // El ID es clave para saber cuál actualizar
+
+            return $stmt->execute();
+        } catch (\PDOException $e) {
+            die("Error al actualizar: " . $e->getMessage());
+        }
+    }
+
 }
