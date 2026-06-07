@@ -25,6 +25,7 @@ class UsuarioController {
                 // ¡Login correcto! Guardamos datos en la sesión
                 $_SESSION['usuario_id'] = $usuario['id'];
                 $_SESSION['usuario_nombre'] = $usuario['nombre'];
+                $_SESSION['usuario_rol'] = $usuario['rol']; //Guardamos si es admin o cliente
                 
                 // Redirigimos al catálogo
                 header("Location: index.php");
@@ -42,5 +43,30 @@ class UsuarioController {
         header("Location: index.php");
         exit();
     }
+
+
+    // Muestra la vista de registro
+    public function registro() {
+        require_once '../src/views/usuarios/registro.php';
+    }
+
+    // Procesa el formulario de registro
+    public function guardarUsuario() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $nombre = trim($_POST['nombre']);
+            $email = trim($_POST['email']);
+            $password = $_POST['password']; // No se hace trim a la contraseña por si el usuario quiso usar espacios
+
+            $usuarioModel = new \App\Models\Usuario();
+            
+            // Aquí en un proyecto real comprobaríamos si el email ya existe.
+            if ($usuarioModel->registrar($nombre, $email, $password)) {
+                // Redirigimos al login con un mensaje de éxito por URL (opcional)
+                header("Location: index.php?controller=Usuario&action=login&registro=ok");
+                exit();
+            }
+        }
+    }
+
 }
 ?>

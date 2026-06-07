@@ -6,13 +6,14 @@ use App\Models\Producto;
 class ProductoController {
 
     public function index() {
-        // 1. Instanciar el modelo Producto
-        $producto = new Producto();
-
-        // 2. Llamar al método listarTodo() y guardar el resultado en una variable llamada $productos
-        $productos=$producto->listarTodo();
-       
-        // 3. Cargar la vista. Llevamos lo que obtenemos del método listartodo para pintarla en index.php
+        $categoria_id = $_GET['categoria'] ?? null;
+        $tipo = $_GET['tipo'] ?? null; // NUEVO: Capturamos si quieren ver personalizados
+        
+        $productoModel = new \App\Models\Producto();
+        
+        // Le pasamos AMBOS parámetros
+        $productos = $productoModel->listarTodo($categoria_id, $tipo);
+        
         require_once '../src/views/productos/index.php';
     }
 
@@ -36,13 +37,39 @@ class ProductoController {
         // SEGURIDAD: Primero nos aseguramos de que los datos vienen por POST (para evitar que alguien intente meterse escribiendo cosas en la URL).
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
+            // =================================================================
+            // NUEVO: LÓGICA PARA PROCESAR LA SUBIDA DE LA FOTO DEL PRODUCTO
+            // =================================================================
+            $nombreImagen = 'default.jpg'; // Imagen por defecto si el usuario no sube ninguna foto
+            
+            // Comprobamos si nos ha llegado un archivo por $_FILES y si no ha habido errores en la subida temporal
+            if (isset($_FILES['imagen_producto']) && $_FILES['imagen_producto']['error'] === UPLOAD_ERR_OK) {
+                // Definimos la carpeta física donde guardaremos las fotos
+                $carpetaDestino = '../public/img/productos/';
+                
+                // Extraemos el nombre original del archivo subido
+                $nombreOriginal = basename($_FILES['imagen_producto']['name']);
+                
+                // Generamos un nombre único añadiendo la marca de tiempo actual (time()) 
+                // para evitar que dos fotos diferentes se llamen igual y se sobrescriban
+                $nombreImagen = time() . '_' . $nombreOriginal; 
+                
+                $rutaFinal = $carpetaDestino . $nombreImagen;
+                
+                // Movemos el archivo de la memoria temporal de XAMPP a nuestra carpeta final
+                move_uploaded_file($_FILES['imagen_producto']['tmp_name'], $rutaFinal);
+            }
+            // =================================================================
+
             // Recogemos los datos del formulario en un array limpiando con trim.
             $datos = [
                 'nombre'       => trim($_POST['nombre']),
                 'categoria_id' => $_POST['categoria_id'],
+                'es_personalizable' => $_POST['es_personalizable'],
                 'descripcion'  => trim($_POST['descripcion']),
                 'precio_base'  => $_POST['precio_base'],
-                'stock'        => $_POST['stock']
+                'stock'        => $_POST['stock'],
+                'imagen'       => $nombreImagen // <--- NUEVO: Añadimos el nombre de la foto que acabamos de procesar
             ];
 
             // Instanciamos el modelo Producto para comunicarnos con la base de datos
@@ -97,32 +124,84 @@ class ProductoController {
         exit();
     }
 
-        /**
-     * Actualiza un producto existente UPDATE
-     */
-    public function actualizar($datos) {
-        try {
-            $sql = "UPDATE productos SET 
-                    categoria_id = :categoria_id, 
-                    nombre = :nombre, 
-                    descripcion = :descripcion, 
-                    precio_base = :precio_base, 
-                    stock = :stock 
-                    WHERE id = :id";
+  
+    public function actualizar() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
-            $stmt = $this->db->prepare($sql);
+            // 1. Cogemos la foto actual. Si por algún motivo viene vacía, le ponemos default.jpg
+            $nombreImagen = !empty($_POST['imagen_actual']) ? $_POST['imagen_actual'] : 'default.jpg';
             
-            $stmt->bindParam(':categoria_id', $datos['categoria_id'], \PDO::PARAM_INT);
-            $stmt->bindParam(':nombre', $datos['nombre'], \PDO::PARAM_STR);
-            $stmt->bindParam(':descripcion', $datos['descripcion'], \PDO::PARAM_STR);
-            $stmt->bindParam(':precio_base', $datos['precio_base'], \PDO::PARAM_STR);
-            $stmt->bindParam(':stock', $datos['stock'], \PDO::PARAM_INT);
-            $stmt->bindParam(':id', $datos['id'], \PDO::PARAM_INT); // El ID es clave para saber cuál actualizar
+            // 2. Si el usuario sube una foto NUEVA
+            if (isset($_FILES['imagen_producto']) && $_FILES['imagen_producto']['error'] === UPLOAD_ERR_OK) {
+                
+                // Usamos __DIR__ para que la ruta sea absoluta y perfecta en Windows/XAMPP
+                $carpetaDestino = __DIR__ . '/../../public/img/productos/';
+                
+                $nombreOriginal = basename($_FILES['imagen_producto']['name']);
+                $nombreSinEspacios = str_replace(' ', '_', $nombreOriginal); // Quitamos espacios por seguridad
+                $nombreImagen = time() . '_' . $nombreSinEspacios; 
+                $rutaFinal = $carpetaDestino . $nombreImagen;
+                
+                // Movemos la foto nueva
+                move_uploaded_file($_FILES['imagen_producto']['tmp_name'], $rutaFinal);
+                
+                // 3. BORRAR LA ANTIGUA (CORREGIDO)
+                $imagenAntigua = $_POST['imagen_actual'] ?? '';
+                
+                // Verificamos que no esté vacía, que no sea la default, y ¡MUY IMPORTANTE! que sea un archivo (is_file)
+                if ($imagenAntigua !== '' && $imagenAntigua !== 'default.jpg' && is_file($carpetaDestino . $imagenAntigua)) {
+                    unlink($carpetaDestino . $imagenAntigua); 
+                }
+            }
 
-            return $stmt->execute();
-        } catch (\PDOException $e) {
-            die("Error al actualizar: " . $e->getMessage());
+            // Agrupamos todos los datos (Asegúrate de que 'es_personalizable' está capturado)
+            $datos = [
+                'id'                => $_POST['id'],
+                'categoria_id'      => $_POST['categoria_id'], 
+                'es_personalizable' => $_POST['es_personalizable'] ?? 1, 
+                'nombre'            => trim($_POST['nombre']),
+                'descripcion'       => trim($_POST['descripcion']), 
+                'precio_base'       => $_POST['precio_base'],
+                'stock'             => $_POST['stock'],
+                'imagen'            => $nombreImagen 
+            ];
+
+            $productoModel = new \App\Models\Producto();
+            
+            if ($productoModel->actualizar($datos)) {
+                header("Location: index.php?controller=Producto&action=index");
+                exit();
+            } else {
+                echo "Error al intentar actualizar el producto en la base de datos.";
+            }
+        }
+    }
+
+    /**
+     * Muestra el formulario relleno con los datos del producto a editar
+     */
+    public function editar() {
+        // 1. Capturamos el ID de la URL
+        $id = $_GET['id'] ?? null;
+
+        if ($id) {
+            // 2. Buscamos el producto en la BBDD
+            $productoModel = new \App\Models\Producto();
+            $producto = $productoModel->obtenerPorId($id); 
+            
+            // 3. Si existe, cargamos la vista pasándole los datos
+            if ($producto) {
+                require_once '../src/views/productos/editar.php';
+            } else {
+                echo "Error: El producto no existe.";
+            }
+
+            } else {
+            // Si alguien intenta entrar sin pasar un ID, lo devolvemos al catálogo
+            header("Location: index.php");
+            exit();
         }
     }
 
 }
+?>

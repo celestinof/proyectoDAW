@@ -22,19 +22,32 @@ private $arrayProductos;
         }
 
         /**
-         * Función que recupera todos los objetos de la base de datos, por su id
+         * Función que recupera los productos. Filtra por categoría y/o por tipo de personalización.
          */
-        public function listarTodo(){
+        public function listarTodo($categoria_id = null, $tipo = null){
+            
+            // Empezamos la consulta base
+            $sql = "SELECT * FROM productos WHERE 1=1";
+            
+            if ($categoria_id) {
+                $sql .= " AND categoria_id = :categoria_id";
+            }
+            
+            // Añadimos el filtro de personalización si nos lo piden
+            if ($tipo === 'personalizable') {
+                $sql .= " AND es_personalizable = 1";
+            } elseif ($tipo === 'estandar') {
+                $sql .= " AND es_personalizable = 0";
+            }
 
-        //Preparamos la consulta SQL y la guardamos en "statement"
-        $stmt=$this->db->prepare("SELECT * FROM productos");
+            $stmt = $this->db->prepare($sql);
 
-        //Ejecutamos la consulta SQL
-        $stmt->execute();
-             
-        //Recuperamos y retornamos el array. Pedimos que solo nos muestre el nombre de las columnas (array asociativo)
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if ($categoria_id) {
+                $stmt->bindParam(':categoria_id', $categoria_id, \PDO::PARAM_INT);
+            }
 
+            $stmt->execute();
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
         }
 
             /**
@@ -46,8 +59,8 @@ private $arrayProductos;
         try {
             // 1. Preparamos la consulta SQL para vinvular con bindparam. Esto evita inyecciones SQL porque separa el código de los datos.
             // Nota: Asumimos un iva_porcentaje por defecto del 21.00 si no viene del formulario
-            $sql = "INSERT INTO productos (categoria_id, nombre, descripcion, precio_base, iva_porcentaje, stock) 
-                    VALUES (:categoria_id, :nombre, :descripcion, :precio_base, 21.00, :stock)";
+            $sql = "INSERT INTO productos (categoria_id, nombre, descripcion, precio_base, iva_porcentaje, stock, imagen, es_personalizable) 
+                    VALUES (:categoria_id, :nombre, :descripcion, :precio_base, 21.00, :stock, :imagen, :es_personalizable)";
             
             // 2. Preparamos la sentencia usando la conexión que ya teníamos en el constructor
             $stmt = $this->db->prepare($sql);
@@ -69,6 +82,12 @@ private $arrayProductos;
             
             // stock
             $stmt->bindParam(':stock', $datos['stock']);
+
+            // imagen
+            $stmt->bindParam(':imagen', $datos['imagen']);
+
+            // es_personalizable
+            $stmt->bindParam(':es_personalizable', $datos['es_personalizable']);
 
             // 4. EJECUCIÓN DE LA CONSULTA y almacenar el resultado
             $resultado = $stmt->execute();
@@ -131,18 +150,13 @@ private $arrayProductos;
     }
 
 
-        /**
+    /**
      * Actualiza un producto existente. update
      */
     public function actualizar($datos) {
         try {
-            $sql = "UPDATE productos SET 
-                    categoria_id = :categoria_id, 
-                    nombre = :nombre, 
-                    descripcion = :descripcion, 
-                    precio_base = :precio_base, 
-                    stock = :stock 
-                    WHERE id = :id";
+            // SQL EN UNA SOLA LÍNEA para evitar errores de sintaxis y comas fantasma
+            $sql = "UPDATE productos SET categoria_id = :categoria_id, nombre = :nombre, descripcion = :descripcion, precio_base = :precio_base, stock = :stock, imagen = :imagen, es_personalizable = :es_personalizable WHERE id = :id";
             
             $stmt = $this->db->prepare($sql);
             
@@ -151,14 +165,15 @@ private $arrayProductos;
             $stmt->bindParam(':descripcion', $datos['descripcion'], \PDO::PARAM_STR);
             $stmt->bindParam(':precio_base', $datos['precio_base'], \PDO::PARAM_STR);
             $stmt->bindParam(':stock', $datos['stock'], \PDO::PARAM_INT);
-            $stmt->bindParam(':id', $datos['id'], \PDO::PARAM_INT); // El ID es clave para saber cuál actualizar
+            $stmt->bindParam(':imagen', $datos['imagen'], \PDO::PARAM_STR);
+            $stmt->bindParam(':es_personalizable', $datos['es_personalizable'], \PDO::PARAM_INT);
+            $stmt->bindParam(':id', $datos['id'], \PDO::PARAM_INT);
 
             return $stmt->execute();
         } catch (\PDOException $e) {
-            die("Error al actualizar: " . $e->getMessage());
+            die("Error al actualizar el producto: " . $e->getMessage());
         }
     }
-
 }
 
 
