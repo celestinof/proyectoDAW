@@ -14,48 +14,40 @@ class Pedido {
     }
 
     /**
-     * Registra el pedido, los detalles y actualiza el stock usando Transacciones.
+     * Registra el pedido, los detalles, la dirección y actualiza el stock usando Transacciones.
      */
-    public function procesarCheckout($carrito) {
+    public function procesarCheckout($carrito, $direccion_envio) {
         try {
-            // INICIAMOS LA TRANSACCIÓN (Punto clave para la defensa)
             $this->db->beginTransaction();
 
-            // 1. Calculamos el total del pedido desde el carrito
-            // ACTUALIZADO: Lo desglosamos en base, iva y final para que encaje perfecto en tu BBDD
             $totalBase = 0;
             $totalIva = 0;
             $totalFinal = 0;
             
             foreach ($carrito as $item) {
                 $subtotalBase = $item['precio_base'] * $item['cantidad'];
-                $subtotalIva = $subtotalBase * 0.21; // Calculamos el 21% de IVA
+                $subtotalIva = $subtotalBase * 0.21; 
                 
                 $totalBase += $subtotalBase;
                 $totalIva += $subtotalIva;
                 $totalFinal += ($subtotalBase + $subtotalIva);
             }
 
-            // Comprobamos si el que compra es el administrador (logueado) o un visitante (null)
             $usuario_id = $_SESSION['usuario_id'] ?? null;
 
-            // 2. Insertamos el pedido general (asumimos fecha automática en la BD)
-            // ACTUALIZADO: Insertamos en las 4 columnas reales que vimos en tu phpMyAdmin
-            $sqlPedido = "INSERT INTO pedidos (usuario_id, total_base_imponible, total_iva, total_final) 
-                          VALUES (:usuario_id, :total_base, :total_iva, :total_final)";
+            $sqlPedido = "INSERT INTO pedidos (usuario_id, direccion_envio, total_base_imponible, total_iva, total_final) 
+                          VALUES (:usuario_id, :direccion_envio, :total_base, :total_iva, :total_final)";
             
             $stmtPedido = $this->db->prepare($sqlPedido);
             $stmtPedido->bindParam(':usuario_id', $usuario_id, PDO::PARAM_INT);
+            $stmtPedido->bindParam(':direccion_envio', $direccion_envio, PDO::PARAM_STR); 
             $stmtPedido->bindParam(':total_base', $totalBase, PDO::PARAM_STR);
             $stmtPedido->bindParam(':total_iva', $totalIva, PDO::PARAM_STR);
             $stmtPedido->bindParam(':total_final', $totalFinal, PDO::PARAM_STR);
             $stmtPedido->execute();
 
-            // Capturamos el ID del pedido que se acaba de crear
             $idPedido = $this->db->lastInsertId();
 
-            // 3. Preparamos las consultas para los detalles y el stock
-            // ACTUALIZADO: Adaptado a las columnas "captura" de tu diseño de BBDD
             $sqlDetalle = "INSERT INTO detalles_pedido (pedido_id, producto_id, cantidad, precio_unitario_captura, iva_aplicado_captura) 
                            VALUES (:pedido_id, :producto_id, :cantidad, :precio_unitario_captura, :iva_aplicado_captura)";
             $stmtDetalle = $this->db->prepare($sqlDetalle);
@@ -63,14 +55,10 @@ class Pedido {
             $sqlStock = "UPDATE productos SET stock = stock - :cantidad WHERE id = :producto_id";
             $stmtStock = $this->db->prepare($sqlStock);
 
-            // 4. Bucle para procesar cada artículo de la cesta
             foreach ($carrito as $item) {
-                
-                // Extraemos el precio base sin alterar y definimos el IVA para guardarlo en el historial
                 $precioCaptura = $item['precio_base'];
                 $ivaCaptura = 21.00;
 
-                // Insertamos la línea del detalle del pedido
                 $stmtDetalle->bindParam(':pedido_id', $idPedido, PDO::PARAM_INT);
                 $stmtDetalle->bindParam(':producto_id', $item['id'], PDO::PARAM_INT);
                 $stmtDetalle->bindParam(':cantidad', $item['cantidad'], PDO::PARAM_INT);
@@ -78,29 +66,25 @@ class Pedido {
                 $stmtDetalle->bindParam(':iva_aplicado_captura', $ivaCaptura, PDO::PARAM_STR);
                 $stmtDetalle->execute();
 
-                // Restamos el stock
                 $stmtStock->bindParam(':cantidad', $item['cantidad'], PDO::PARAM_INT);
                 $stmtStock->bindParam(':producto_id', $item['id'], PDO::PARAM_INT);
                 $stmtStock->execute();
             }
 
-            // CONFIRMAMOS LA TRANSACCIÓN (Si llegamos aquí, todo ha ido bien)
             $this->db->commit();
             return true;
 
         } catch (PDOException $e) {
-            // SI ALGO FALLA, DESHACEMOS TODO PARA NO CORROMPER LA BD
             $this->db->rollBack();
             die("Error crítico al procesar la compra: " . $e->getMessage());
         }
     }
-/**
+
+    /**
      * Obtiene el historial de pedidos de un cliente específico
      */
     public function obtenerPedidosPorUsuario($usuario_id) {
         try {
-            // Buscamos los pedidos de este usuario ordenados por fecha (los más nuevos primero)
-            // Asumimos que tienes una columna de fecha en tu tabla 'pedidos'
             $sql = "SELECT * FROM pedidos WHERE usuario_id = :usuario_id ORDER BY id DESC";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':usuario_id', $usuario_id, PDO::PARAM_INT);
@@ -117,7 +101,6 @@ class Pedido {
      */
     public function obtenerTodosLosPedidos() {
         try {
-            // Hacemos un JOIN con la tabla de usuarios para que el admin pueda ver el nombre y email del cliente
             $sql = "SELECT p.*, u.nombre AS cliente_nombre, u.email AS cliente_email 
                     FROM pedidos p 
                     JOIN usuarios u ON p.usuario_id = u.id 
@@ -132,8 +115,7 @@ class Pedido {
     }
 
     /**
-     * Actualiza el estado de un pedido (Ej: De 'Pendiente' a 'Enviado')
-     * Asumiendo que has creado una columna 'estado' en la tabla 'pedidos'
+     * Actualiza el estado de un pedido (Ej: De 'pendiente' a 'enviado')
      */
     public function actualizarEstado($pedido_id, $nuevo_estado) {
         try {
@@ -145,6 +127,25 @@ class Pedido {
             return $stmt->execute();
         } catch (PDOException $e) {
             die("Error al cambiar el estado: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Obtiene los productos (detalles) de un pedido concreto
+     */
+    public function obtenerDetallesPorPedido($pedido_id) {
+        try {
+            $sql = "SELECT dp.*, p.nombre 
+                    FROM detalles_pedido dp 
+                    JOIN productos p ON dp.producto_id = p.id 
+                    WHERE dp.pedido_id = :pedido_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':pedido_id', $pedido_id, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            die("Error al obtener los detalles del pedido: " . $e->getMessage());
         }
     }
 }

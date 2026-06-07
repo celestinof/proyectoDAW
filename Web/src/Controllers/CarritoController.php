@@ -78,22 +78,22 @@ class CarritoController {
     public function procesar() {
         if (!empty($_SESSION['carrito'])) {
             $pedidoModel = new Pedido();
-            
-            // Le pasamos el array completo del carrito al modelo
-            if ($pedidoModel->procesarCheckout($_SESSION['carrito'])) {
+
+            // 1. NUEVO: Atrapamos la dirección que viene del formulario de pago
+            $direccion_envio = $_POST['direccion_envio'] ?? 'Dirección no proporcionada';
+
+            // 2. NUEVO: Le pasamos AMBAS cosas al modelo (el carrito y la dirección)
+            if ($pedidoModel->procesarCheckout($_SESSION['carrito'], $direccion_envio)) {
                 // Si la BD lo guarda bien, vaciamos el carrito de la memoria RAM
                 unset($_SESSION['carrito']);
-                
-                // Redirigimos a una pantalla de éxito o mostramos un mensaje
-                echo "<div style='text-align:center; margin-top: 50px; font-family: sans-serif;'>";
-                echo "<h1 style='color: green;'>¡Compra realizada con éxito!</h1>";
-                echo "<p>Gracias por apoyar la artesanía local.</p>";
-                echo "<a href='index.php'>Volver a la tienda</a>";
-                echo "</div>";
+
+                // Redirigimos a la pantalla de mis pedidos (mucho más elegante que el mensaje suelto)
+                header("Location: index.php?controller=Pedido&action=misPedidos");
                 exit();
             }
         } else {
             header("Location: index.php?controller=Carrito&action=ver");
+            exit();
         }
     }
 

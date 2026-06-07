@@ -62,7 +62,7 @@
             </div>
 
             <div class="d-flex justify-content-between mb-5">
-                <a href="index.php" class="btn btn-outline-secondary">Seguir Comprando</a>
+                <a href="index.php?controller=Producto&action=index" class="btn btn-outline-secondary">Seguir Comprando</a>
                 
                 <div>
                     <a href="index.php?controller=Carrito&action=vaciar" class="btn btn-danger me-2">Vaciar Carrito</a>

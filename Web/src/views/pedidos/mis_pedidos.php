@@ -12,6 +12,7 @@
                                 <tr>
                                     <th class="ps-4 py-3">Nº Pedido</th>
                                     <th class="py-3">Fecha de Compra</th>
+                                    <th class="py-3">Dirección de Envío</th>
                                     <th class="py-3">Total (IVA inc.)</th>
                                     <th class="py-3 text-center" style="width: 250px;">Estado del Envío</th>
                                 </tr>
@@ -20,11 +21,21 @@
                                 <?php foreach ($pedidos as $pedido): ?>
                                     <tr>
                                         <td class="ps-4 fw-bold text-primary">
-                                            #<?= str_pad($pedido['id'], 5, '0', STR_PAD_LEFT) ?>
+                                            #<?= str_pad($pedido['id'], 5, '0', STR_PAD_LEFT) ?><br>
+                                            <button class="btn btn-sm btn-outline-secondary mt-1" type="button" data-bs-toggle="collapse" data-bs-target="#detalles-<?= $pedido['id'] ?>" aria-expanded="false">
+                                                Ver artículos 🔽
+                                            </button>
                                         </td>
                                         
                                         <td>
-                                            <?= date('d/m/Y H:i', strtotime($pedido['fecha'] ?? 'now')) ?>
+                                            <?= date('d/m/Y H:i', strtotime($pedido['fecha'] ?? $pedido['fecha_pedido'] ?? 'now')) ?>
+                                        </td>
+
+                                        <td>
+                                            <small class="text-muted">
+                                                <i class="bi bi-geo-alt-fill text-danger"></i> 
+                                                <?= !empty($pedido['direccion_envio']) ? htmlspecialchars($pedido['direccion_envio']) : 'No registrada (Pedido antiguo)' ?>
+                                            </small>
                                         </td>
                                         
                                         <td class="text-success fw-bold">
@@ -33,10 +44,8 @@
                                         
                                         <td class="text-center py-3">
                                             <?php 
-                                            // Lógica de colores según el estado
                                             $estado = $pedido['estado'] ?? 'pendiente';
                                             $badgeClass = 'bg-secondary';
-                                            
                                             if ($estado === 'pendiente') $badgeClass = 'bg-warning text-dark';
                                             if ($estado === 'pagado') $badgeClass = 'bg-info text-dark';
                                             if ($estado === 'enviado') $badgeClass = 'bg-success';
@@ -53,7 +62,24 @@
                                             <?php endif; ?>
                                         </td>
                                     </tr>
-                                <?php endforeach; ?>
+
+                                    <tr class="collapse bg-light" id="detalles-<?= $pedido['id'] ?>">
+                                        <td colspan="5" class="p-4 border-bottom">
+                                            <h6 class="text-secondary fw-bold mb-3">Contenido del paquete:</h6>
+                                            <ul class="list-group list-group-flush border rounded">
+                                                <?php foreach ($pedido['detalles'] as $detalle): ?>
+                                                    <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <span class="badge bg-secondary rounded-pill me-2"><?= $detalle['cantidad'] ?>x</span>
+                                                            <span class="fw-bold"><?= htmlspecialchars($detalle['nombre']) ?></span>
+                                                        </div>
+                                                        <span class="text-muted"><?= number_format($detalle['precio_unitario_captura'], 2, ',', '.') ?> € / ud</span>
+                                                    </li>
+                                                <?php endforeach; ?>
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
                             </tbody>
                         </table>
                     </div>

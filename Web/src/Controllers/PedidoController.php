@@ -9,17 +9,20 @@ class PedidoController {
      * Muestra el historial de compras del cliente
      */
     public function misPedidos() {
-        // 1. Verificamos que el usuario esté logueado
         if (!isset($_SESSION['usuario_id'])) {
             header("Location: index.php?controller=Usuario&action=login");
             exit();
         }
 
-        // 2. Llamamos al modelo para buscar sus pedidos
         $pedidoModel = new Pedido();
+        // 1. Buscamos los pedidos generales
         $pedidos = $pedidoModel->obtenerPedidosPorUsuario($_SESSION['usuario_id']);
 
-        // 3. Cargamos la vista pasándole la variable $pedidos
+        // 2. NUEVO: Por cada pedido, le añadimos sus detalles (productos)
+        foreach ($pedidos as &$pedido) {
+            $pedido['detalles'] = $pedidoModel->obtenerDetallesPorPedido($pedido['id']);
+        }
+
         require_once __DIR__ . '/../views/pedidos/mis_pedidos.php';
     }
 
