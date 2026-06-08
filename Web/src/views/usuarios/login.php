@@ -16,9 +16,12 @@
                                 <input type="email" name="email" class="form-control" required placeholder="tu@email.com">
                             </div>
                             
-                            <div class="mb-4">
-                                <label class="form-label fw-bold">Contraseña:</label>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Contraseña</label>
                                 <input type="password" name="password" class="form-control" required>
+                            <div class="text-end mt-1">
+                                <a href="index.php?controller=Usuario&action=recuperar" class="text-decoration-none text-muted small">¿Olvidaste tu contraseña?</a>
+                            </div>
                             </div>
                             
                             <button type="submit" class="btn btn-primary w-100 mb-3">Entrar al Sistema</button>

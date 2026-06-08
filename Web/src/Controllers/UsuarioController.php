@@ -58,19 +58,57 @@ class UsuarioController {
             $nombre = trim($_POST['nombre']);
             $email = trim($_POST['email']);
             
-            // Cuidado aquí: NO le hago trim() a la contraseña a propósito. 
-            // Si el usuario quiso poner espacios al principio o al final de su clave por manía, hay que respetarlo.
             $password = $_POST['password']; 
+            $confirm_password = $_POST['confirm_password'] ?? ''; 
+
+            // Parche de última hora: Me di cuenta de que si el usuario tecleaba mal su clave
+            // se iba a quedar bloqueado para siempre. Meto esta validación rápida.
+            if ($password !== $confirm_password) {
+                // Si no coinciden, lo devuelvo al registro pasándole un error por URL
+                header("Location: index.php?controller=Usuario&action=registro&error=pass");
+                exit();
+            }
 
             $usuarioModel = new \App\Models\Usuario();
             
-            // Nota mental para futuras versiones: Estaría bien meter aquí una consulta 
-            // para avisar si el email ya está pillado antes de intentar registrarlo a lo bruto.
+            // Nota mental para futuras versiones... (el resto sigue igual)
             if ($usuarioModel->registrar($nombre, $email, $password)) {
-                // Lo mandamos al login pasándole un chivato por la URL para poder mostrarle un mensaje de éxito
                 header("Location: index.php?controller=Usuario&action=login&registro=ok");
                 exit();
             }
+        }
+    }
+
+    // Pinta un formulario sencillito pidiendo el email para recuperar la clave
+    public function recuperar() {
+        // Como no me daba tiempo a hacer una vista entera por que me di cuenta en los últimos testeos, uso un pequeño truco: 
+        // Cargo la cabecera, pinto el HTML a pelo y cargo el footer. Queda resultón.
+        require_once '../src/views/layouts/header.php';
+        echo '
+        <div class="container mt-5">
+            <div class="row justify-content-center">
+                <div class="col-md-5 card p-4 shadow">
+                    <h4 class="text-center">Recuperar Contraseña</h4>
+                    <p class="text-muted text-center small">Introduce tu email y te enviaremos las instrucciones.</p>
+                    <form action="index.php?controller=Usuario&action=procesarRecuperacion" method="POST">
+                        <input type="email" name="email_recuperacion" class="form-control mb-3" required placeholder="tu@email.com">
+                        <button type="submit" class="btn btn-primary w-100">✉️ Enviar enlace</button>
+                    </form>
+                </div>
+            </div>
+        </div>';
+        require_once '../src/views/layouts/footer.php';
+    }
+
+    // Procesa (de mentira) la petición de recuperar contraseña
+    public function procesarRecuperacion() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Aquí en la vida real usaríamos PHPMailer para mandar un token de un solo uso.
+            // Para la entrega del proyecto lo dejo simulado.
+            // OJO: Por seguridad, siempre mostramos el mensaje de éxito, exista el correo en la BBDD o no.
+            
+            header("Location: index.php?controller=Usuario&action=login&recuperacion=enviada");
+            exit();
         }
     }
 
