@@ -15,13 +15,15 @@ class PedidoController {
         }
 
         $pedidoModel = new Pedido();
-        // 1. Buscamos los pedidos generales
         $pedidos = $pedidoModel->obtenerPedidosPorUsuario($_SESSION['usuario_id']);
 
-        // 2. NUEVO: Por cada pedido, le añadimos sus detalles (productos)
+        // Bucle con referencia (&) para añadir los detalles
         foreach ($pedidos as &$pedido) {
             $pedido['detalles'] = $pedidoModel->obtenerDetallesPorPedido($pedido['id']);
         }
+        
+        // Esto me dió un dolor de cabeza...  Rompemos la referencia para que no salgan los pedidos repetidos.
+        unset($pedido);
 
         require_once __DIR__ . '/../views/pedidos/mis_pedidos.php';
     }
