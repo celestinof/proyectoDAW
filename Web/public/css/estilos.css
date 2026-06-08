@@ -1,20 +1,35 @@
 /* ========================================================
-   HOJA DE ESTILOS PERSONALIZADA (Complementaria a Bootstrap)
-   ========================================================
-*/
+   HOJA DE ESTILOS PERSONALIZADA - ArtesanosEnLinea
+   Complementaria al framework Bootstrap 5.
+   Autor: Celestino Fernando Amigo de Pascual
+   ======================================================== */
 
-/* Bootstrap ya formatea los formularios muy bien y la verdad es que es muy cómodo ir sacando el diseño de la web
-*/
-
-/* Clase para ocultar/mostrar los mensajes de error debajo de los inputs */
-.error-js { 
-    color: #dc3545; /* Usamos el mismo rojo que usa Bootstrap para los errores (lo busqué en internet*/
-    display: none; /* Por defecto, oculto hasta que JS lo active */
-    margin-top: 5px; 
+/* * 1. VARIABLES GLOBALES DE MARCA (Temática Madera/Artesanía)
+ * Sobrescriben o complementan los colores base para dar identidad al proyecto.
+ */
+:root {
+    --color-madera-clara: #D4A373;
+    --color-madera-media: #CCD5AE;
+    --color-tierra-oscura: #FAEDCD;
+    --color-texto-principal: #333333;
 }
 
-/* Clase que nuestro JavaScript añadirá al input si falla la validación */
+/* * 2. CLASES PARA VALIDACIÓN DE FORMULARIOS (Controlado vía JavaScript)
+ * Estas clases actúan en conjunto con la lógica de validación del lado del cliente.
+ */
+
+/* Contenedor dinámico para mensajes de error de validación */
+.error-js { 
+    color: #dc3545; /* Color semántico alineado con la variable $danger de Bootstrap */
+    display: none;  /* Oculto por defecto hasta que el DOM sea manipulado por JS */
+    margin-top: 5px; 
+    font-size: 0.875em;
+}
+
+/* * Feedback visual para inputs que no pasan la validación.
+ * Se utiliza !important para asegurar la sobrescritura de los estados focus de Bootstrap.
+ */
 .input-invalido { 
-    border-color: #dc3545 !important; /* Forzamos el borde rojo */
-    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25); /* Efecto de resplandor rojo al hacer clic */
+    border-color: #dc3545 !important; 
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important; 
 }

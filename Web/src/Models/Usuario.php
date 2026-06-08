@@ -13,12 +13,13 @@ class Usuario {
     }
 
 
-        /**
-     * Registra un nuevo usuario en la base de datos (con rol 'cliente' por defecto)
-     */
+    // Da de alta a un usuario nuevo en la BBDD.
+    // Ojo: Le clavo el rol 'cliente' a fuego en la consulta SQL para evitar que algún listillo 
+    // intente inyectar un rol 'admin' modificando el HTML del formulario en el navegador.
     public function registrar($nombre, $email, $password) {
         try {
-            // Encriptamos la contraseña de forma segura 
+            // Encriptamos la clave. Uso PASSWORD_DEFAULT en vez de poner BCRYPT directo porque 
+            // leí que así PHP se encarga de usar el mejor algoritmo automáticamente si actualizamos el servidor.
             $hashSeguro = password_hash($password, PASSWORD_DEFAULT);
 
             $sql = "INSERT INTO usuarios (nombre, email, password, rol) 
@@ -36,18 +37,21 @@ class Usuario {
     }
 
 
-    /**
-     * Busca un usuario por su email para comprobar el login
-     */
+    // Busca a un usuario por su email cuando intenta hacer login.
     public function buscarPorEmail($email) {
         try {
+            // Le meto el LIMIT 1 a la consulta para rascar rendimiento: 
+            // como los emails no se pueden repetir, en cuanto encuentre el suyo le digo a MySQL que pare de buscar.
             $sql = "SELECT * FROM usuarios WHERE email = :email LIMIT 1";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':email', $email, PDO::PARAM_STR);
             $stmt->execute();
-            return $stmt->fetch(PDO::FETCH_ASSOC); // Devuelve los datos del usuario o false
+            
+            // Fetch normal (no fetchAll) porque sabemos que como mucho va a devolver una sola fila
+            return $stmt->fetch(PDO::FETCH_ASSOC); 
+            
         } catch (PDOException $e) {
-            die("Error en la base de datos: " . $e->getMessage());
+            die("Error en la base de datos al buscar usuario: " . $e->getMessage());
         }
     }
 }

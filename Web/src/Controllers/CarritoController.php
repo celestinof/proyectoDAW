@@ -6,7 +6,7 @@ use App\Models\Pedido;
 
 class CarritoController {
 
-    // El constructor se asegura de que el carrito exista en la sesión al instanciar la clase
+    // Si es la primera vez que el usuario hace algo con el carrito en esta sesión, lo inicializamos vacío
     public function __construct() {
         if (!isset($_SESSION['carrito'])) {
             $_SESSION['carrito'] = [];
@@ -17,10 +17,10 @@ class CarritoController {
      * Añade un producto al carrito
      */
     public function agregar() {
-        // 1. CORRECCIÓN: Buscamos el ID en POST (formulario) y si no, en GET (enlace)
+        // A veces el ID viene por el formulario (POST) y otras por un enlace directo (GET). Pillo el que llegue.
         $id = $_POST['id'] ?? $_GET['id'] ?? null;
         
-        // 2. NUEVO: Capturamos el texto de personalización (si lo hay)
+        // Atrapamos el texto por si el cliente quiere algún grabado en la madera o personalización
         $notas = trim($_POST['notas_personalizacion'] ?? '');
         
         if ($id) {
@@ -28,28 +28,29 @@ class CarritoController {
             $producto = $productoModel->obtenerPorId($id);
 
             if ($producto) {
-                // 3. NUEVO: Creamos una clave única para la sesión combinando el ID y un hash del texto.
+                // Truco clave: Como un mismo producto puede pedirse con distintas personalizaciones, 
+                // creo una clave combinada usando el ID y un hash del texto. Así no se pisan en el carrito.
                 // Ej: Si no hay texto será "5". Si hay texto será "5_a1b2c3d4"
                 $cartKey = $id . ($notas !== '' ? '_' . md5($notas) : '');
 
-                // Si esa combinación exacta ya está en el carrito, sumamos 1 a la cantidad
+                // Si esa combinación exacta ya la metió antes, solo le sumamos 1 a la cantidad
                 if (isset($_SESSION['carrito'][$cartKey])) {
                     $_SESSION['carrito'][$cartKey]['cantidad'] += 1;
                 } else {
-                    // Si es la primera vez que lo añade, lo metemos con cantidad 1
+                    // Si es la primera vez que lo añade con esa configuración, lo metemos como nuevo
                     $_SESSION['carrito'][$cartKey] = [
-                        'id'          => $producto['id'], // ID real de la BBDD
+                        'id'          => $producto['id'], // El ID real que irá a la base de datos
                         'nombre'      => $producto['nombre'],
                         'precio_base' => $producto['precio_base'],
                         'cantidad'    => 1,
                         'notas'       => $notas,
-                        'cartKey'     => $cartKey // Guardamos esta clave para los botones de + y -
+                        'cartKey'     => $cartKey // Me guardo la clave rara para poder buscarlo luego en los botones de + y -
                     ];
                 }
             }
         }
         
-        // Redirigimos a la vista del carrito
+        // De vuelta a la vista del carrito
         header("Location: index.php?controller=Carrito&action=ver");
         exit();
     }
@@ -58,62 +59,63 @@ class CarritoController {
      * Muestra la pantalla con los productos del carrito
      */
     public function ver() {
-        // Pasamos el array del carrito a la vista
+        // Volcamos lo que haya en la sesión a una variable para que la vista lo pinte más fácil
         $carrito = $_SESSION['carrito'];
         require_once '../src/views/carrito/ver.php';
     }
 
     /**
-     * Vacía el carrito por completo
+     * Vacía el carrito por completo de un plumazo
      */
     public function vaciar() {
-        unset($_SESSION['carrito']); // Destruye la variable del carrito
+        unset($_SESSION['carrito']); 
         header("Location: index.php?controller=Carrito&action=ver");
         exit();
     }
 
     /**
-     * Llama al modelo Pedido para guardar la compra y vacía el carrito
+     * Llama al modelo Pedido para guardar la compra definitiva
      */
     public function procesar() {
         if (!empty($_SESSION['carrito'])) {
             $pedidoModel = new Pedido();
 
-            // 1. NUEVO: Atrapamos la dirección que viene del formulario de pago
+            // Pillamos la dirección que rellenó en el formulario de pago
             $direccion_envio = $_POST['direccion_envio'] ?? 'Dirección no proporcionada';
 
-            // 2. NUEVO: Le pasamos AMBAS cosas al modelo (el carrito y la dirección)
+            // Le mandamos todo al modelo para que haga la inserción en la BBDD
             if ($pedidoModel->procesarCheckout($_SESSION['carrito'], $direccion_envio)) {
-                // Si la BD lo guarda bien, vaciamos el carrito de la memoria RAM
+                
+                // Si la base de datos lo traga bien, ya podemos limpiar el carrito de la sesión
                 unset($_SESSION['carrito']);
 
-                // Redirigimos a la pantalla de mis pedidos (mucho más elegante que el mensaje suelto)
+                // Lo mandamos a su historial de pedidos, queda mucho más limpio que un simple alert
                 header("Location: index.php?controller=Pedido&action=misPedidos");
                 exit();
             }
         } else {
+            // Por si intentan forzar la URL de procesar con el carrito vacío
             header("Location: index.php?controller=Carrito&action=ver");
             exit();
         }
     }
 
     /**
-     * Muestra la pasarela de pago ficticia
+     * Muestra la pasarela de pago (ficticia para el proyecto)
      */
     public function pagar() {
-        // Comprobamos si el carrito tiene productos
         if (empty($_SESSION['carrito'])) {
             header("Location: index.php?controller=Carrito&action=ver");
             exit();
         }
 
-        // Obligamos a que el usuario esté registrado y logueado para poder pagar
+        // Control de seguridad vital: si no estás logueado, al login de cabeza. No se puede comprar como anónimo.
         if (!isset($_SESSION['usuario_id'])) {
             header("Location: index.php?controller=Usuario&action=login");
             exit();
         }
 
-        // Calculamos el total rápido para mostrárselo en el botón de pago
+        // Calculo rápido del total con IVA para pintarlo en el botón final
         $totalPagar = 0;
         foreach ($_SESSION['carrito'] as $item) {
             $totalPagar += ($item['precio_base'] * 1.21) * $item['cantidad'];
@@ -123,10 +125,10 @@ class CarritoController {
     }
 
     /**
-     * Suma 1 a la cantidad de un producto en el carrito
+     * Suma 1 a la cantidad de un producto concreto
      */
     public function sumar() {
-        // Ahora el id que recibimos es la clave única (ej: "5" o "5_a1b2c3d4")
+        // Ojo, aquí recibimos la clave combinada (ej: "5_a1b2c3d4"), no el ID normal
         $cartKey = $_GET['id'] ?? null;
         if ($cartKey && isset($_SESSION['carrito'][$cartKey])) {
             $_SESSION['carrito'][$cartKey]['cantidad'] += 1;
@@ -136,14 +138,14 @@ class CarritoController {
     }
 
     /**
-     * Resta 1 a la cantidad. Si llega a 0, elimina el producto del carrito.
+     * Resta 1 a la cantidad. Si llega a 0, adiós producto.
      */
     public function restar() {
         $cartKey = $_GET['id'] ?? null;
         if ($cartKey && isset($_SESSION['carrito'][$cartKey])) {
             $_SESSION['carrito'][$cartKey]['cantidad'] -= 1;
             
-            // Si al restar nos quedamos a 0, lo borramos del carrito
+            // Si al restar nos quedamos a 0, lo borramos de la sesión directamente
             if ($_SESSION['carrito'][$cartKey]['cantidad'] <= 0) {
                 unset($_SESSION['carrito'][$cartKey]);
             }
@@ -153,7 +155,7 @@ class CarritoController {
     }
 
     /**
-     * Elimina completamente un producto del carrito, sin importar la cantidad
+     * Elimina el producto del carrito sin importar cuántos haya
      */
     public function eliminarArticulo() {
         $cartKey = $_GET['id'] ?? null;

@@ -1,44 +1,44 @@
-//1. ESPERAR A QUE CARGUE LA WEB
-// Escuchamos el evento 'DOMContentLoaded', que se activa cuando el HTML está listo
-document.addEventListener("DOMContentLoaded", function() {
-    console.log("JavaScript cargado"); 
+/**
+ * Script de validación para los formularios de productos.
+ * Revisa que los datos estén bien antes de enviarlos a PHP.
+ */
 
-    //2. CAPTURAMOS LOS INPUTS
-    // Buscamos los elementos del DOM por su ID. 
-    // Usamos un ID genérico ("formProducto") para reciclar este código al Crear y al Editar.
+// Esperamos a que la página esté completamente lista
+document.addEventListener("DOMContentLoaded", function() {
+    
+    // Buscamos el formulario. Usamos el mismo para "Crear" y "Editar"
     const formulario = document.getElementById("formProducto");
     
-    // CONTROL DE SEGURIDAD: Solo ejecutamos las validaciones si el formulario existe en la página actual
+    // Solo seguimos si el formulario existe en esta pantalla
     if (formulario) {
         
         const inputNombre = document.getElementById("nombre");
         const inputPrecio = document.getElementById("precio");
 
-        //3. Cuando el usuario sale del campo nombre queremos comprobar que no esté vacío y sea solo letras     
-        // Escuchamos el evento 'blur' (perder el foco) en el input del nombre
+        // 1. Revisar el NOMBRE cuando el usuario pincha fuera de la casilla
         inputNombre.addEventListener("blur", function() {
-            // Expresión regular: permite letras con acentos, ñ y espacios. Permite números (por ejemplo, llavero2)
+            // Solo permitimos letras, números y espacios (ejemplo: "Mesa de roble 2")
             const regexLetras = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]+$/;
-
-            // .value.trim() quita los espacios en blanco que el usuario pueda poner sin querer al principio o final
+            
+            // Quitamos los espacios vacíos que se hayan colado al principio o al final
             const valorLimpio = inputNombre.value.trim();
 
+            // Si está vacío o tiene símbolos no permitidos, mostramos el error en rojo
             if (valorLimpio === "" || !regexLetras.test(valorLimpio)) {
-                // Si está vacío o no cumple la regex, añadimos la clase de Bootstrap para poner el borde rojo
                 inputNombre.classList.add("is-invalid");
             } else {
-                // Si es correcto, quitamos la clase de error por si acaso estaba puesta
+                // Si todo está bien, quitamos el error y lo ponemos en mayúsculas
                 inputNombre.classList.remove("is-invalid");
-                // Lo pasamos a MAYÚSCULAS
                 inputNombre.value = valorLimpio.toUpperCase();
             }
         });
 
-        //Paso 4: Validar el Precio al pinchar fuera (que sea mayor a 0)
+        // 2. Revisar el PRECIO cuando el usuario pincha fuera de la casilla
         inputPrecio.addEventListener("blur", function() {
-            // Convertimos el texto a número decimal con parseFloat
+            // Convertimos el texto a número con decimales
             const valorPrecio = parseFloat(inputPrecio.value);
 
+            // Tiene que ser un número válido y mayor a cero
             if (inputPrecio.value === "" || valorPrecio <= 0 || isNaN(valorPrecio)) {
                 inputPrecio.classList.add("is-invalid");
             } else {
@@ -46,29 +46,27 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
 
-        //Paso 5: Controlar el botón de enviar (submit)
-        //Por último, si el usuario hace clic en el botón de "Guardar", tenemos que revisar de golpe que todo esté correcto.
-        // Si hay algún campo con la clase is-invalid o vacío, detendremos el envío usando evento.preventDefault().
+        // 3. Revisión final al darle al botón de GUARDAR
         formulario.addEventListener("submit", function(evento) {
-            // Comprobación rápida: si alguno está vacío, le metemos el error directamente
+            // Hacemos una comprobación rápida por si dejaron los campos en blanco
             if (inputNombre.value.trim() === "") inputNombre.classList.add("is-invalid");
             if (inputPrecio.value === "") inputPrecio.classList.add("is-invalid");
 
-            // Buscamos si hay algún elemento en el formulario que tenga la clase de error 'is-invalid'
+            // Miramos si hay alguna casilla marcada en rojo (con error)
             const camposConErrores = formulario.querySelectorAll(".is-invalid");
 
             if (camposConErrores.length > 0) {
-                // IMPORTANTE porque Evita que el formulario se envíe a PHP
+                // Frenamos el envío para que el formulario no llegue roto a la base de datos
                 evento.preventDefault();
-                alert("Por favor, corrige los campos en rojo antes de enviar.");
+                alert("Por favor, corrige los campos marcados en rojo.");
             } else {
-                // Si todo está bien, pedimos confirmación
+                // Si todo está correcto, preguntamos para estar seguros
                 const proceder = confirm("¿Estás seguro de que deseas guardar este producto?");
                 if (!proceder) {
-                    evento.preventDefault(); // Si dice que no, cancelamos
+                    evento.preventDefault(); // Cancelamos la acción si el usuario se arrepiente
                 }
             }
         });
         
-    } // <-- Fin del if(formulario)
-}); // <-- Cerramos correctamente el evento DOMContentLoaded
+    }
+});

@@ -5,51 +5,56 @@ use App\Models\Pedido;
 
 class PedidoController {
 
-    /**
-     * Muestra el historial de compras del cliente
-     */
+    // Carga la pantalla de "Mis Pedidos" con el historial del cliente
     public function misPedidos() {
+        
+        // Echamos a los curiosos que intenten entrar directamente por la URL sin loguearse
         if (!isset($_SESSION['usuario_id'])) {
             header("Location: index.php?controller=Usuario&action=login");
             exit();
         }
 
         $pedidoModel = new Pedido();
+        
+        // Pillamos todos los pedidos generales de este usuario en concreto
         $pedidos = $pedidoModel->obtenerPedidosPorUsuario($_SESSION['usuario_id']);
 
-        // Bucle con referencia (&) para añadir los detalles
+        // Ojo aquí: uso la referencia (&) para modificar el array original y meterle 
+        // los productos (detalles) dentro de cada pedido. Así la vista lo tiene más fácil para pintar.
         foreach ($pedidos as &$pedido) {
             $pedido['detalles'] = $pedidoModel->obtenerDetallesPorPedido($pedido['id']);
         }
         
-        // Esto me dió un dolor de cabeza...  Rompemos la referencia para que no salgan los pedidos repetidos.
+        // Esto me dio un dolor de cabeza brutal... Rompemos la referencia del foreach 
+        // para evitar bugs raros y que no salga duplicado el último pedido en la pantalla.
         unset($pedido);
 
         require_once __DIR__ . '/../views/pedidos/mis_pedidos.php';
     }
 
-    /**
-     * Muestra el panel de gestión para el Administrador
-     */
+    // Pantalla del administrador para ver las ventas y cambiar estados
     public function gestionAdmin() {
-        // Doble control de seguridad (además del que ya pusimos en index.php)
+        
+        // Por si acaso alguien se cuela, doble check de que tiene el rol de admin de verdad 
+        // (aunque el index.php ya debería haberlo parado)
         if (!isset($_SESSION['usuario_rol']) || $_SESSION['usuario_rol'] !== 'admin') {
             header("Location: index.php");
             exit();
         }
 
         $pedidoModel = new Pedido();
-        // El admin necesita ver TODOS los pedidos de la tienda
+        
+        // Aquí no filtramos por ID, el admin lo ve absolutamente todo
         $pedidos = $pedidoModel->obtenerTodosLosPedidos();
 
         require_once __DIR__ . '/../views/pedidos/gestion_admin.php';
     }
 
-    /**
-     * Actualiza el estado de envío de un pedido (Solo Admin)
-     */
+    // Función para cambiar si el pedido está "Pendiente", "Enviado", etc.
     public function cambiarEstado() {
-        // Solo aceptamos peticiones por formulario (POST)
+        
+        // Nos aseguramos de que los datos vengan del botón del formulario (POST) 
+        // y no de alguien toqueteando variables en la URL
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pedido_id = $_POST['pedido_id'] ?? null;
             $nuevo_estado = $_POST['estado'] ?? null;
@@ -60,7 +65,7 @@ class PedidoController {
             }
         }
         
-        // Tras actualizar, devolvemos al admin a la pantalla de gestión
+        // Recargamos la página de gestión para que el admin vea el cambio de estado al instante
         header("Location: index.php?controller=Pedido&action=gestionAdmin");
         exit();
     }
